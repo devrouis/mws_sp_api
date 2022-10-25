@@ -1,0 +1,63 @@
+<div class="bg-light border-right" id="sidebar-wrapper">
+  <div class="list-group list-group-flush">
+    <a href="{% url 'main:profile' user.pk %}" class="list-group-item list-group-item-action bg-light {% if 'profile' in request.path %}active{% endif %}">登録情報</a>
+    <a href="{% url 'main:newrequest' %}" class="list-group-item list-group-item-action bg-light {% if 'newrequest' in request.path %}active{% endif %}">新規リクエスト</a>
+    <a href="{% url 'main:history' %}" class="list-group-item list-group-item-action bg-light {% if 'history' in request.path %}active{% endif %}">リクエスト一覧</a>
+    {% if user.username == "aldecino@gmail.com" %}
+    <a href="{% url 'main:setting' 1 %}" class="list-group-item list-group-item-action bg-light {% if 'setting' in request.path %}active{% endif %}">設定</a>  
+    {% endif %}  
+    <!-- <a href="{% url 'main:results' %}" class="list-group-item list-group-item-action bg-light {% if 'results' in request.path %}active{% endif %}">リクエスト結果</a> -->
+  </div>
+</div>
+<style>
+  /*!
+ * Start Bootstrap - Simple Sidebar (https://startbootstrap.com/template-overviews/simple-sidebar)
+ * Copyright 2013-2019 Start Bootstrap
+ * Licensed under MIT (https://github.com/BlackrockDigital/startbootstrap-simple-sidebar/blob/master/LICENSE)
+ */
+
+  #sidebar-wrapper {
+    min-height: 93vh;
+    margin-left: -15rem;
+    -webkit-transition: margin .25s ease-out;
+    -moz-transition: margin .25s ease-out;
+    -o-transition: margin .25s ease-out;
+    transition: margin .25s ease-out;
+  }
+
+  #sidebar-wrapper .sidebar-heading {
+    padding: 0.875rem 1.25rem;
+    font-size: 1.2rem;
+  }
+
+  #sidebar-wrapper .list-group {
+    width: 15rem;
+  }
+
+  #page-content-wrapper {
+    min-width: 100vw;
+  }
+
+  #wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
+  }
+  .list-group-item.active {
+    color: black;
+    font-weight: bold;
+  }
+  @media (min-width: 768px) {
+    #sidebar-wrapper {
+      margin-left: 0;
+    }
+
+    #page-content-wrapper {
+      min-width: 0;
+      width: 100%;
+    }
+
+    #wrapper.toggled #sidebar-wrapper {
+      margin-left: -15rem;
+    }
+  }
+
+</style>

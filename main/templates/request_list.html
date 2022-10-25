@@ -1,0 +1,112 @@
+
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load myfilters %}
+{% block title %}Top{% endblock %}
+
+{% block style %}
+  <style>
+    .operation-form {
+      display: inline-block;
+    }
+
+  </style>
+{% endblock %}
+
+
+{% block pagetitle %}
+  <H6>Request List</H6>
+{% endblock %}
+
+{% block content %}
+<div class="table-responsive card shadow p-2">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>ID Type</th>
+        <th>Count</th>
+        <th>Date Requested</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in object_list %}
+        <tr>
+          <td>{{ o.id }}</td>
+          <td>{{ o.id_type }}</td>
+          <td>{{ o.id_count }}</td>
+          <td>{{ o.requested_at | date:"Y/n/j H:i" }}</td>
+          <td>
+            <span class="badge badge-pill {{ o.status_badge_class }}">
+            {{ o.status_text }}
+            </span>
+          </td>
+          <td style="white-space: nowrap;">
+            {% if o.downloadable %}
+            <form class="operation-form">
+              <button type="button" data-toggle="modal" data-target="#download-modal" data-request-id="{{ o.id }}" class="btn btn-sm btn-primary"><i class="fas fa-file-download"></i></button>
+            </form>
+            {% endif %}
+            
+            <form class="operation-form" method="post" action="{% url 'main:deleterequest' o.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i></button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<!-- <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal" data-whatever="@getbootstrap">Open modal for @getbootstrap</button> -->
+
+<div class="modal fade" id="download-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Download CSV</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'main:download' %}">
+        <!-- <form method="post"> -->
+          {% csrf_token %}
+          <input type="hidden" id="request-id" name="request-id" value="">
+          <div class="form-group">
+            <label for="message-text" class="col-form-label">Encoding:</label>
+            <select name="encoding" class="form-control form-control-sm">
+              <option selected value="cp932">cp932(Shift-JIS)</option>
+              <option value="utf-8">UTF-8</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Download</button>
+       
+        </form>
+      </div>
+      <div class="modal-footer">
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  $(function() {
+    $('#download-modal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget) // Button that triggered the modal
+      var request_id = button.data('request-id') // Extract info from data-* attributes
+      // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
+      // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
+      var modal = $(this)
+      modal.find('.modal-body input#request-id').val(request_id)
+    })
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,36 @@
+{% load crispy_forms_tags %}
+<html>
+<head>
+  {% include "components/head.html" %}
+  <style>
+
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container pt-5">
+    <div class="row">
+      <div class="col-6 offset-3">
+        <h2 class="text-center">Sign Up</h2>
+        <div class="card shadow p-4">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="{{ message|bootstrap_message_classes }} alert-dismissable">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&#215;</button>
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+          <form method="post">
+            {% csrf_token %}
+            {{ form | crispy }}
+            <button class="btn btn-primary">Signup</button>
+            <span>or</span>
+            <a href="{% url 'main:login' %}" class="">Login</a>
+          
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

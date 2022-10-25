@@ -1,0 +1,5 @@
+{{ user.last_name }} さま
+
+以下からアカウントを有効化してください。
+
+{{ baseurl }}{% url 'main:activateaccount' token %}

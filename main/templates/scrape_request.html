@@ -1,0 +1,61 @@
+
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Top{% endblock %}
+
+{% block style %}
+  <style>
+
+
+  </style>
+{% endblock %}
+
+
+{% block pagetitle %}
+  <H6>New Request</H6>
+{% endblock %}
+
+{% block content %}
+  {% if not user.subscribing %}
+    {% if use_paypal %}
+    <span>有効なサブスクリプションが見つかりませんでした</span><a class="btn btn-primary" href="{% url 'main:subscribe' %}">購読する</a>
+    {% else %}
+    <span>利用権限がありません。管理者にお問い合わせください。</span>
+    {% endif %}
+  {% else %}
+    <div class="row">
+      <div class="col-6">
+        <div class="card shadow p-3">
+          <form method="post">
+            <input type="hidden" name="media" value="text">
+            {% csrf_token %}
+            {{ textform | crispy }}
+            <button class="btn btn-sm btn-success shadow">Request</button>
+          </form>    
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="card shadow p-3">
+          <form method="post" enctype='multipart/form-data'>
+            <input type="hidden" name="media" value="file">
+            {% csrf_token %}
+            {{ csvform | crispy }}
+            <button class="btn btn-sm btn-success shadow">Request</button>
+          </form>
+        </div>    
+      </div>
+    </div>
+    {% if use_paypal and not user.is_superuser %}
+    <a class="btn btn-danger mt-2 shadow" href="{% url 'main:unsubscribe' user.mysubscription.subscription_id %}">購読をキャンセルする</a>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+{% block script %}
+<script>
+  $(function() {
+    
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,35 @@
+<nav class="navbar navbar-expand-sm navbar-light bg-light py-1">
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav4" aria-controls="navbarNav4" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <a class="navbar-brand" href="#">問屋ハンター</a>
+  <div class="collapse navbar-collapse">
+    <ul class="navbar-nav">
+
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      {% if user.is_authenticated %}
+      <span class="btn welcome">
+        ようこそ {{ user.username }} さん
+      </span>
+    
+      <a class="btn logout_button" href="{% url 'main:logout' %}">
+        Logout
+      </a>
+      {% else %}
+      {% endif %}
+    </ul>
+  </div>
+</nav>
+<style>
+  nav {
+    border-bottom: solid lightgray 0.5px!important;
+  }
+  .navbar {
+    height: 7vh;
+  }
+
+
+  
+  
+</style>

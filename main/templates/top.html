@@ -1,0 +1,48 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Top{% endblock %}
+
+{% block style %}
+  <style>
+   
+  </style>
+{% endblock %}
+
+{% block pagetitle %}{{ pagetitle }}{% endblock %}
+{% block content %}
+
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" id="upload-tab" data-toggle="tab" href="#upload" role="tab" aria-controls="upload" aria-selected="true">ファイル</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="rawdata-tab" data-toggle="tab" href="#rawdata" role="tab" aria-controls="rowdata" aria-selected="false">データ</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="itemcount-tab" data-toggle="tab" href="#itemcount" role="tab" aria-controls="itemcount" aria-selected="false">出品数/有効在庫数</a>
+  </li>
+</ul>
+<div class="tab-content" id="myTabContent">
+  <div class="tab-pane fade show active" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+   
+  </div>
+  <div class="tab-pane fade" id="rawdata" role="tabpanel" aria-labelledby="rawdata-tab">
+    
+  </div>
+  <div class="tab-pane fade" id="itemcount" role="tabpanel" aria-labelledby="itemcount-tab">
+  </div> 
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  $(function() {
+    
+  });
+</script>
+
+{% endblock %}
+
+
+
