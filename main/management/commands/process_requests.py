@@ -17,8 +17,8 @@ from main.sp_api.sp_api_new_formatting import *
 from main.sp_api import *
 from main.sp_api.sp_api_aws import *
 
-# from sp_api.base import Marketplaces
-# from sp_api.api import Orders
+from sp_api.base import Marketplaces
+from sp_api.api import Orders
 # ------------------------------------------------
 
 def chunks(lst, n):
@@ -67,9 +67,12 @@ def process_request(req):
   #     lwa_client_secret=appsettings.sp_api_client_secret,
   #     aws_secret_key=appsettings.sp_IAM_user_secret_key,
   #     aws_access_key=appsettings.sp_IAM_user_access_key,
+  #     # role_arn = 'arn:aws:iam::072834111115:role/ASIN_JAN_ROLE'
   # )
-  # response = Orders(credentials=credentials).get_orders(Keywords=[4518648225137, 4935066601181, 4976219086301], IncludedData=["attributes","dimensions","images","productTypes","salesRanks","summaries","relationships"], MarketplaceIds=["A1VC38T7YXB528"])
-  
+  # response = Orders(credentials=credentials).get_orders(CreatedAfter='TEST_CASE_200', MarketplaceIds=["ATVPDKIKX0DER"])
+  # print('***response start***')
+  # print(response)
+  # print('***response end***')
   req.status = REQUEST_STATUS_IN_PROGRESS
   req.save()
 
@@ -94,23 +97,27 @@ def process_request(req):
   
   if req.id_type == ID_ASIN :
     if req.user.api_type == SP:
-      for asin in req.id_list:
-        data = []
-        # sp_api_start()
-        token=SPAPI_Get_Token(sp_get_token_param)
-        SPAPI_Access_Token=token[0] 
-        CatalogItem = SPAPI_GetCatalogItemsForASIN(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token)
-        NewProductPrice = SPAPI_GetProductsPriceForAsin(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token, 'new')
-        UsedProductPrice = SPAPI_GetProductsPriceForAsin(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token, 'used')
-        combined_dct1 = merge_dict(CatalogItem, NewProductPrice)
-        combined_dct2 = merge_dict(combined_dct1, UsedProductPrice)
+      token=SPAPI_Get_Token(sp_get_token_param)
+      SPAPI_Access_Token=token[0] 
+      # CatalogItems = SPAPI_GetCatalogItems("", req.id_list, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token)
+      ProductsItemOffers = SPAPI_GetProductsItemOffers("", req.id_list, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token)
+      # for asin in req.id_list:
+      #   data = []
+      #   # sp_api_start()
+      #   token=SPAPI_Get_Token(sp_get_token_param)
+      #   SPAPI_Access_Token=token[0] 
+      #   CatalogItem = SPAPI_GetCatalogItemsForASIN(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token)
+      #   NewProductPrice = SPAPI_GetProductsPriceForAsin(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token, 'new')
+      #   UsedProductPrice = SPAPI_GetProductsPriceForAsin(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token, 'used')
+      #   combined_dct1 = merge_dict(CatalogItem, NewProductPrice)
+      #   combined_dct2 = merge_dict(combined_dct1, UsedProductPrice)
         
-        data =  json.dumps(combined_dct2)
-        combined_json = SP_API_NEW_FORMATTING(json.loads(data))
+      #   data =  json.dumps(combined_dct2)
+      #   combined_json = SP_API_NEW_FORMATTING(json.loads(data))
 
-        asinItem = asin
+      #   asinItem = asin
 
-        parse_and_save_result(req, 'operation_name', json.dumps(combined_json), asinItem, janItem, 'asin_list', 'jan_list')
+      #   parse_and_save_result(req, 'operation_name', json.dumps(combined_json), asinItem, janItem, 'asin_list', 'jan_list')
 
         # if type(data) in [dict, ObjectDict]: # if single product
         #   parse_and_save_result(req, 'operation_name', res, asinItem, janItem, 'asin_list', 'jan_list')

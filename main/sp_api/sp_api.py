@@ -4,6 +4,8 @@ import os,sys,time
 import hashlib
 import hmac
 import urllib.parse
+from urllib.parse import quote_plus, quote, urlencode
+from wsgiref.util import request_uri
 import requests
 import json
 from time import gmtime, strftime
@@ -39,9 +41,8 @@ def SPAPI_Get_Token(sp_get_token_param):
     return resp_access_token, resp_refresh_token, resp_token_type, resp_expires_in
 
 def SPAPI_Get_Header_And_RequestUrl(SPAPI_Access_Token, SPAPI_IAM_User_Access_Key, SPAPI_IAM_User_Secret_Key, SPAPI_Method, SPAPI_Service, SPAPI_Domain, SPAPI_Region, SPAPI_Endpoint, SPAPI_SignatureMethod, SPAPI_UserAgent, request_parameters_unencode, SPAPI_API_Path):
-
     ## リクエストパラメータ設定（パラメータはアルファベット順にすること！ & URLエンコードしないと、リクエストエラーになる場合あり！カンマ区切り文字入れるならURLエンコード必須）
-    request_parameters = urllib.parse.urlencode(request_parameters_unencode)
+    request_parameters = urllib.parse.urlencode(request_parameters_unencode, safe="()", quote_via=quote)
 
     ### Python による署名キーの取得関数
     def sign(key, msg):
@@ -77,11 +78,11 @@ def SPAPI_Get_Header_And_RequestUrl(SPAPI_Access_Token, SPAPI_IAM_User_Access_Ke
 
     ## 正規リクエストの作成
     canonical_request = SPAPI_Method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
-    
+
     ## 問合せ資格情報を作成し、署名方式、ハッシュ化された正規リクエスト情報を結合した情報を作成する
     credential_scope = datestamp + '/' + SPAPI_Region + '/' + SPAPI_Service + '/' + 'aws4_request'
     string_to_sign = SPAPI_SignatureMethod + '\n' +  amzdate + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()
-    
+
     ## 定義した関数を用いて署名鍵を作成
     signing_key = getSignatureKey(SPAPI_IAM_User_Secret_Key, datestamp, SPAPI_Region, SPAPI_Service)
 
@@ -159,6 +160,180 @@ def SPAPI_GetProductsPriceForAsin(Asin_Code, SPAPI_IAM_User_Access_Key, SPAPI_IA
     # print(api_response.text)
     # print("*********Pricing Response Start*******")
     return json.loads(api_response.text)
+
+
+
+def SPAPI_GetCatalogItems(IdentifiersType, Identifiers, SPAPI_IAM_User_Access_Key, SPAPI_IAM_User_Secret_Key, SPAPI_MarketplaceId, SPAPI_Access_Token):
+    SPAPI_API_Path = '/catalog/2022-04-01/items'
+
+    strIdentifiers = ','.join(str(x) for x in Identifiers)
+
+    request_parameters_unencode = {
+        "identifiers" : strIdentifiers,
+        "identifiersType" : "ASIN",
+        "includedData:" : ['attributes', 'dimensions', 'images', 'productTypes', 'salesRanks', 'summaries', 'relationships'],
+        "marketplaceIds" : "A1VC38T7YXB528"
+    }
+
+    headerAndUrl = SPAPI_Get_Header_And_RequestUrl(SPAPI_Access_Token, SPAPI_IAM_User_Access_Key, SPAPI_IAM_User_Secret_Key, SPAPI_Method, SPAPI_Service, SPAPI_Domain, SPAPI_Region, SPAPI_Endpoint, SPAPI_SignatureMethod, SPAPI_UserAgent, request_parameters_unencode, SPAPI_API_Path)
+    request_url = headerAndUrl[1]
+    headers = headerAndUrl[0]
+    api_response = requests.get(request_url, headers=headers)
+    return json.loads(api_response.text)
+
+def SPAPI_GetProductsItemOffers(IdentifiersType, Identifiers, SPAPI_IAM_User_Access_Key, SPAPI_IAM_User_Secret_Key, SPAPI_MarketplaceId, SPAPI_Access_Token):
+    SPAPI_API_Path = '/batches/products/pricing/v0/itemOffers'
+    # strIdentifiers = ','.join(str(x) for x in Identifiers)
+    request_parameters_unencode = ''
+
+    params = {
+        "requests": [
+            {
+                "uri": "/products/pricing/v0/items/B079TG39FD/offers",
+                "method": "GET",
+                "MarketplaceId": "A1VC38T7YXB528",
+                "ItemCondition": "New",
+                "CustomerType": "Consumer"
+            }
+            # {
+            # "uri": "/products/pricing/v0/items/B07BFN6D1T/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # },
+            # {
+            # "uri": "/products/pricing/v0/items/B079T6CHPV/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # },
+            # {
+            # "uri": "/products/pricing/v0/items/B078Y35VK4/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # },
+            # {
+            # "uri": "/products/pricing/v0/items/B07BG5414M/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # },
+            # {
+            # "uri": "/products/pricing/v0/items/B072J2J26T/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # },
+            # {
+            # "uri": "/products/pricing/v0/items/B00505DW2I/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # },
+            # {
+            # "uri": "/products/pricing/v0/items/B00CGZQU42/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # },
+            # {
+            # "uri": "/products/pricing/v0/items/B01LY2ZYRF/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # },
+            # {
+            # "uri": "/products/pricing/v0/items/B00KFRNZY6/offers",
+            # "method": "GET",
+            # "MarketplaceId": "A1VC38T7YXB528",
+            # "ItemCondition": "New",
+            # "CustomerType": "Consumer"
+            # }
+        ]
+    }
+
+    headerAndUrl = SPAPI_POST_Get_Header_And_RequestUrl(SPAPI_Access_Token, SPAPI_IAM_User_Access_Key, SPAPI_IAM_User_Secret_Key, 'POST', SPAPI_Service, SPAPI_Domain, SPAPI_Region, SPAPI_Endpoint, SPAPI_SignatureMethod, SPAPI_UserAgent, request_parameters_unencode, SPAPI_API_Path, params)
+    request_url = headerAndUrl[1]
+    headers = headerAndUrl[0]
+    api_response = requests.post(request_url, headers=headers, data=params)
+    print('*** api response start ***')
+    print(api_response.text)
+    print('*** api response end ***')
+    return json.loads(api_response.text)
+
+
+def SPAPI_POST_Get_Header_And_RequestUrl(SPAPI_Access_Token, SPAPI_IAM_User_Access_Key, SPAPI_IAM_User_Secret_Key, SPAPI_Method, SPAPI_Service, SPAPI_Domain, SPAPI_Region, SPAPI_Endpoint, SPAPI_SignatureMethod, SPAPI_UserAgent, request_parameters_unencode, SPAPI_API_Path, params):
+    ## リクエストパラメータ設定（パラメータはアルファベット順にすること！ & URLエンコードしないと、リクエストエラーになる場合あり！カンマ区切り文字入れるならURLエンコード必須）
+    request_parameters = urllib.parse.urlencode(request_parameters_unencode, safe="()", quote_via=quote)
+
+    ### Python による署名キーの取得関数
+    def sign(key, msg):
+        return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()
+
+    def getSignatureKey(key, dateStamp, regionName, serviceName):
+        kDate = sign(('AWS4' + key).encode('utf-8'), dateStamp)
+        kRegion = sign(kDate, regionName)
+        kService = sign(kRegion, serviceName)
+        kSigning = sign(kService, 'aws4_request')
+        return kSigning
+
+    ### ヘッダー情報と問合せ資格(credential)情報のための時刻情報作成
+    t = datetime.utcnow()
+    amzdate = t.strftime('%Y%m%dT%H%M%SZ')
+    datestamp = t.strftime('%Y%m%d') # Date w/o time, used in credential scope
+
+    ## URI設定
+    canonical_uri = SPAPI_API_Path
+
+    ## 正規リクエストパラメータ設定
+    canonical_querystring = ''
+
+    ## 正規リクエストヘッダリストの作成
+    canonical_headers = 'host:' + SPAPI_Domain + '\n' + 'user-agent:' + SPAPI_UserAgent + '\n' + 'x-amz-access-token:' + SPAPI_Access_Token + '\n' + 'x-amz-date:' + amzdate + '\n'
+
+    ## 正規リクエストヘッダリストの項目情報の作成(hostとx-amz-dateも入れてる)
+    signed_headers = 'host;user-agent;x-amz-access-token;x-amz-date'
+
+    ## ペイロードハッシュ（リクエスト本文コンテンツのハッシュ）の作成
+    ## ※GETリクエストの場合、ペイロードは空の文字列（""）になる。
+    payload_hash = hashlib.sha256((json.dumps(params)).encode('utf-8')).hexdigest()
+
+    ## 正規リクエストの作成
+    canonical_request = SPAPI_Method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
+
+    ## 問合せ資格情報を作成し、署名方式、ハッシュ化された正規リクエスト情報を結合した情報を作成する
+    credential_scope = datestamp + '/' + SPAPI_Region + '/' + SPAPI_Service + '/' + 'aws4_request'
+    string_to_sign = SPAPI_SignatureMethod + '\n' +  amzdate + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()
+    print('***string_to_sign***')
+    print(string_to_sign)
+
+    ## 定義した関数を用いて署名鍵を作成
+    signing_key = getSignatureKey(SPAPI_IAM_User_Secret_Key, datestamp, SPAPI_Region, SPAPI_Service)
+
+    ## 署名鍵で、上記で作成した「string_to_sign」に署名
+    signature = hmac.new(signing_key, (string_to_sign).encode('utf-8'), hashlib.sha256).hexdigest()
+
+    ## Authorizationヘッダの作成
+    authorization_header = SPAPI_SignatureMethod + ' ' + 'Credential=' + SPAPI_IAM_User_Access_Key + '/' + credential_scope + ', ' +  'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
+
+    ## API問合せ用ヘッダ情報の作成
+    headers = {'user-agent':SPAPI_UserAgent, 'x-amz-access-token':SPAPI_Access_Token, 'x-amz-date':amzdate, 'Authorization':authorization_header, 'Content-Type': 'text/xml'}
+
+    ## APIリクエストURLの作成
+    request_url = SPAPI_Endpoint + canonical_uri
+
+    return headers, request_url
+
+
 
 SPAPI_Access_Token_Endpoint='https://api.amazon.com/auth/o2/token'
 SPAPI_Method='GET'
