@@ -493,16 +493,22 @@ class ScrapeRequestResult(models.Model):
     
     @property
     def NewProductLowestPrices(self):
-        if not self.NewProductsSummary["LowestPrices"] or self.NewProductsSummary["LowestPrices"] == '':
+        # if not self.NewProductsSummary["LowestPrices"] or self.NewProductsSummary["LowestPrices"] == '':
+        #     return None
+        try:
+            return self.NewProductsSummary["LowestPrices"]
+        except KeyError:
             return None
-        return self.NewProductsSummary["LowestPrices"]
+        
         
     @property
     def AmazonNewLowestLandPriceAmount(self):
         newProductLowestPrices = self.NewProductLowestPrices
+        
         if not newProductLowestPrices:
             return None
         try:
+            
             return newProductLowestPrices[0]["LandedPrice"]["Amount"]
         except KeyError:
             return None
@@ -540,9 +546,12 @@ class ScrapeRequestResult(models.Model):
 
     @property
     def MerchantNewProductLowestPrices(self):
-        if len(self.NewProductsSummary["LowestPrices"]) < 2:
+        try:
+            if len(self.NewProductsSummary["LowestPrices"]) < 2:
+                return None
+            return self.NewProductsSummary["LowestPrices"][1]
+        except KeyError:
             return None
-        return self.NewProductsSummary["LowestPrices"][1]
     
     @property
     def MerchantNewLowestLandPriceAmount(self):
@@ -577,9 +586,9 @@ class ScrapeRequestResult(models.Model):
     @property
     def MerchantOfferCount(self):
         newProductSummary = self.NewProductsSummary
-        if len(newProductSummary["NumberOfOffers"]) < 2:
-            return None
         try:
+            if len(newProductSummary["NumberOfOffers"]) < 2:
+                return None
             return newProductSummary["NumberOfOffers"][1]["OfferCount"] 
         except KeyError:
             return None
@@ -627,9 +636,10 @@ class ScrapeRequestResult(models.Model):
     @property
     def MerchantUsedLowestLandPriceAmount(self):
         usedProductSummary = self.UsedProductsSummary
-        if len(usedProductSummary["LowestPrices"]) < 2:
-            return None
+       
         try:
+            if len(usedProductSummary["LowestPrices"]) < 2:
+                return None
             return usedProductSummary["LowestPrices"][1]["LandedPrice"]["Amount"]
         except KeyError:
             return None
@@ -637,9 +647,9 @@ class ScrapeRequestResult(models.Model):
     @property
     def MerchantUsedLowestShippingAmount(self):
         usedProductSummary = self.UsedProductsSummary
-        if len(usedProductSummary["LowestPrices"]) < 2:
-            return None
         try:
+            if len(usedProductSummary["LowestPrices"]) < 2:
+                return None
             return usedProductSummary["LowestPrices"][1]["Shipping"]["Amount"]
         except KeyError:
             return None
@@ -647,9 +657,9 @@ class ScrapeRequestResult(models.Model):
     @property
     def MerchantUsedLowestPointsNumber(self):
         usedProductSummary = self.UsedProductsSummary
-        if len(usedProductSummary["LowestPrices"]) < 2:
-            return None
         try:
+            if len(usedProductSummary["LowestPrices"]) < 2:
+                return None
             return usedProductSummary["LowestPrices"][1]["Points"]["PointsNumber"]
         except KeyError:
             return None
@@ -657,9 +667,9 @@ class ScrapeRequestResult(models.Model):
     @property
     def MerchantUsedOfferCount(self):
         usedProductSummary = self.UsedProductsSummary
-        if len(usedProductSummary["NumberOfOffers"]) < 2:
-            return None
         try:
+            if len(usedProductSummary["NumberOfOffers"]) < 2:
+                return None
             return usedProductSummary["NumberOfOffers"][1]["OfferCount"] 
         except KeyError:
             return None
