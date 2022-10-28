@@ -121,3 +121,4 @@ ENV/
 !/logs/.keep
 /media/csv/*
 !/media/csv/.keep
+/sample_list.txt

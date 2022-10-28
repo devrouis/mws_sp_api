@@ -15,6 +15,8 @@ from django.conf import settings
 # from main.paypal_apis import get_client, update_subscription
 from main.mws.utils import ObjectDict
 
+import ast
+
 
 class SingletonModel(models.Model):
     class Meta:
@@ -259,7 +261,65 @@ class ScrapeRequestResult(models.Model):
     def AttributeSets(self):
         if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
             return None
-        return json.loads(self.get_matching_product_for_id_raw)["payload"][0]["AttributeSets"][0]
+
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[0]
+        return data["attributes"]
+
+    @property
+    def Summaries(self):
+        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
+            return None
+
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[0]
+        return data["summaries"][0]
+
+    @property
+    def SalesRanks(self):
+        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
+            return None
+
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[0]
+        return data["salesRanks"][0]
+
+    @property
+    def ItemPackageDimensions(self):
+        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
+            return None
+
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[0]
+        return data["attributes"]["item_package_dimensions"][0]
+
+    @property
+    def ItemPackageWeight(self):
+        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
+            return None
+
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[0]
+        return data["attributes"]["item_package_weight"][0]
+
+    @property
+    def Images(self):
+        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
+            return None
+
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[0]
+        return data["images"][0]
+
+    @property
+    def NewProductsSummary(self):
+        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
+            return None
+
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[1]
+        return data["body"]["payload"]["Summary"]
+
+    @property
+    def UsedProductsSummary(self):
+        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
+            return None
+        
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[2]
+        return data["body"]["payload"]["Summary"]
 
     @property
     def Title(self):
@@ -267,350 +327,340 @@ class ScrapeRequestResult(models.Model):
         if not attributesets:
             return None
         try:
-            return attributesets["Title"]
+            return attributesets["item_name"][0]["value"]
         except KeyError:
             return None
     
     @property
     def Publisher(self):
-        attributesets = self.AttributeSets
-        if not attributesets:
+        summaries = self.Summaries
+        if not summaries:
             return None
         try:
-            return attributesets["Publisher"]
+            return summaries["manafacture"]
         except KeyError:
             return None
 
     @property
     def PartNumber(self):
-        attributesets = self.AttributeSets
-        if not attributesets:
+        summaries = self.Summaries
+        if not summaries:
             return None
         try:
-            return attributesets["PartNumber"]
+            return summaries["PartNumber"]
         except KeyError:
             return None
 
     @property
     def ProductGroup(self):
-        attributesets = self.AttributeSets
-        if not attributesets:
+        summaries = self.Summaries
+        if not summaries:
             return None
         try:
-            return attributesets["ProductGroup"]
+            return summaries["itemClassification"]
         except KeyError:
             return None
 
     @property
     def PackageDimensionsWeight(self):
-        attributesets = self.AttributeSets
-        if not attributesets:
+        itemPackageWeight = self.ItemPackageWeight
+        if not itemPackageWeight:
             return None
         try:
-            return attributesets["PackageDimensions"]["Weight"]["value"]
+            return itemPackageWeight["value"]
         except KeyError:
             return None
 
     @property
     def PackageDimensionsHeight(self):
-        attributesets = self.AttributeSets
-        if not attributesets:
+        itemPackageDimensions = self.ItemPackageDimensions
+        if not itemPackageDimensions:
             return None
         try:
-            return attributesets["PackageDimensions"]["Height"]["value"]
+            return itemPackageDimensions["height"]["value"]
         except KeyError:
             return None
 
     @property
     def PackageDimensionsLength(self):
-        attributesets = self.AttributeSets
-        if not attributesets:
+        itemPackageDimensions = self.ItemPackageDimensions
+        if not itemPackageDimensions:
             return None
         try:
-            return attributesets["PackageDimensions"]["Length"]["value"]
+            return itemPackageDimensions["length"]["value"]
         except KeyError:
             return None
 
     @property
     def PackageDimensionsWidth(self):
-        attributesets = self.AttributeSets
-        if not attributesets:
+        itemPackageDimensions = self.ItemPackageDimensions
+        if not itemPackageDimensions:
             return None
         try:
-            return attributesets["PackageDimensions"]["Width"]["value"]
+            return itemPackageDimensions["width"]["value"]
         except KeyError:
             return None
 
     @property
     def SmallImage(self):
-        attributesets = self.AttributeSets
-        if not attributesets:
+        images = self.Images
+        if not images:
             return None
         try:
-            return attributesets["SmallImage"]["URL"]
+            return images["images"][0]["link"]
         except KeyError:
             return None
 
     @property
-    def NewProductSummary(self):
-        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
-            return None
-        return json.loads(self.get_matching_product_for_id_raw)["payload"][1]["Summary"]
-
-    @property
     def SalesRankingOneId(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        salesRanks = self.SalesRanks
+        if not salesRanks:
             return None
         try:
-            return newproductsummary["SalesRankings"][0]["ProductCategoryId"]
+            return salesRanks["classificationRanks"][0]["title"]
         except KeyError:
             return None
     
     @property
     def SalesRankingOneRank(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        salesRanks = self.SalesRanks
+        if not salesRanks:
             return None
         try:
-            return newproductsummary["SalesRankings"][0]["Rank"]
+            return salesRanks["classificationRanks"][0]["rank"]
         except KeyError:
             return None
 
     @property
     def SalesRankingTwoId(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        salesRanks = self.SalesRanks
+        if not salesRanks:
             return None
         try:
-            return newproductsummary["SalesRankings"][1]["ProductCategoryId"]
+            return salesRanks["displayGroupRanks"][0]["title"]
         except KeyError:
             return None
     
     @property
     def SalesRankingTwoRank(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        salesRanks = self.SalesRanks
+        if not salesRanks:
             return None
         try:
-            return newproductsummary["SalesRankings"][1]["Rank"]
+            return salesRanks["displayGroupRanks"][0]["rank"]
         except KeyError:
             return None
     
     @property
     def ListPriceAmount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductSummary = self.NewProductsSummary
+        if not newProductSummary:
             return None
         try:
-            return newproductsummary["ListPrice"]["Amount"]
-        except KeyError:
-            return None
-    
-    @property
-    def ListPriceAmount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
-            return None
-        try:
-            return newproductsummary["ListPrice"]["Amount"]
+            return newProductSummary["ListPrice"]["Amount"]
         except KeyError:
             return None
     
     @property
     def BuyBoxPriceLandAmount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductSummary = self.NewProductsSummary
+        if not newProductSummary:
             return None
         try:
-            return newproductsummary["BuyBoxPrices"][0]["LandedPrice"]["Amount"]
+            return newProductSummary["BuyBoxPrices"][0]["LandedPrice"]["Amount"]
         except KeyError:
             return None
     
     @property
     def BuyBoxPriceShippingAmount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductSummary = self.NewProductsSummary
+        if not newProductSummary:
             return None
         try:
-            return newproductsummary["BuyBoxPrices"][0]["Shipping"]["Amount"]
+            return newProductSummary["BuyBoxPrices"][0]["Shipping"]["Amount"]
         except KeyError:
             return None
     
     @property
     def BuyBoxPricePointsNumber(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductSummary = self.NewProductsSummary
+        if not newProductSummary:
             return None
         try:
-            return newproductsummary["BuyBoxPrices"][0]["Points"]["PointsNumber"]
+            return newProductSummary["BuyBoxPrices"][0]["Points"]["PointsNumber"]
         except KeyError:
             return None
     
     @property
+    def NewProductLowestPrices(self):
+        if not self.NewProductsSummary["LowestPrices"] or self.NewProductsSummary["LowestPrices"] == '':
+            return None
+        return self.NewProductsSummary["LowestPrices"]
+        
+    @property
     def AmazonNewLowestLandPriceAmount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductLowestPrices = self.NewProductLowestPrices
+        if not newProductLowestPrices:
             return None
         try:
-            return newproductsummary["LowestPrices"][0]["LandedPrice"]["Amount"]
+            return newProductLowestPrices[0]["LandedPrice"]["Amount"]
         except KeyError:
             return None
     
     @property
     def AmazonNewLowestShippingAmount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductLowestPrices = self.NewProductLowestPrices
+        if not newProductLowestPrices:
             return None
         try:
-            return newproductsummary["LowestPrices"][0]["Shipping"]["Amount"]
+            return newProductLowestPrices[0]["Shipping"]["Amount"]
         except KeyError:
             return None
     
     @property
     def AmazonNewLowestPointsNumber(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductLowestPrices = self.NewProductLowestPrices
+        if not newProductLowestPrices:
             return None
         try:
-            return newproductsummary["LowestPrices"][0]["Points"]["PointsNumber"]
+            return newProductLowestPrices[0]["Points"]["PointsNumber"]
         except KeyError:
             return None
     
     @property
     def AmazonOfferCount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductSummary = self.NewProductsSummary
+        if not newProductSummary:
             return None
         try:
-            return newproductsummary["NumberOfOffers"][0]["OfferCount"] 
+            return newProductSummary["NumberOfOffers"][0]["OfferCount"] 
 
         except KeyError:
             return None
+
+    @property
+    def MerchantNewProductLowestPrices(self):
+        if len(self.NewProductsSummary["LowestPrices"]) < 2:
+            return None
+        return self.NewProductsSummary["LowestPrices"][1]
     
     @property
     def MerchantNewLowestLandPriceAmount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductLowestPrices = self.MerchantNewProductLowestPrices
+        if not newProductLowestPrices:
             return None
         try:
-            return newproductsummary["LowestPrices"][1]["LandedPrice"]["Amount"]
+            return newProductLowestPrices["LandedPrice"]["Amount"]
         except KeyError:
             return None
     
     @property
     def MerchantNewLowestShippingAmount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductLowestPrices = self.MerchantNewProductLowestPrices
+        if not newProductLowestPrices:
             return None
         try:
-            return newproductsummary["LowestPrices"][1]["Shipping"]["Amount"]
+            return newProductLowestPrices["Shipping"]["Amount"]
         except KeyError:
             return None
     
     @property
     def MerchantNewLowestPointsNumber(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductLowestPrices = self.MerchantNewProductLowestPrices
+        if not newProductLowestPrices:
             return None
         try:
-            return newproductsummary["LowestPrices"][1]["Points"]["PointsNumber"]
+            return newProductLowestPrices["Points"]["PointsNumber"]
         except KeyError:
             return None
     
     @property
     def MerchantOfferCount(self):
-        newproductsummary = self.NewProductSummary
-        if not newproductsummary:
+        newProductSummary = self.NewProductsSummary
+        if len(newProductSummary["NumberOfOffers"]) < 2:
             return None
         try:
-            return newproductsummary["NumberOfOffers"][1]["OfferCount"] 
+            return newProductSummary["NumberOfOffers"][1]["OfferCount"] 
         except KeyError:
             return None
-    
-    @property
-    def UsedProductSummary(self):
-        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
-            return None
-        return json.loads(self.get_matching_product_for_id_raw)["payload"][2]["Summary"]
 
     @property
     def AmazonUsedLowestLandPriceAmount(self):
-        usedproductsummary = self.UsedProductSummary
-        if not usedproductsummary:
+        usedProductSummary = self.UsedProductsSummary
+        if not usedProductSummary:
             return None
         try:
-            return usedproductsummary["LowestPrices"][0]["LandedPrice"]["Amount"]
+            return usedProductSummary["LowestPrices"][0]["LandedPrice"]["Amount"]
         except:
             return None
     
     @property
     def AmazonUsedLowestShippingAmount(self):
-        usedproductsummary = self.UsedProductSummary
-        if not usedproductsummary:
+        usedProductSummary = self.UsedProductsSummary
+        if not usedProductSummary:
             return None
         try:
-            return usedproductsummary["LowestPrices"][0]["Shipping"]["Amount"]
+            return usedProductSummary["LowestPrices"][0]["Shipping"]["Amount"]
         except KeyError:
             return None
     
     @property
     def AmazonUsedLowestPointsNumber(self):
-        usedproductsummary = self.UsedProductSummary
-        if not usedproductsummary:
+        usedProductSummary = self.UsedProductsSummary
+        if not usedProductSummary:
             return None
         try:
-            return usedproductsummary["LowestPrices"][0]["Points"]["PointsNumber"]
+            return usedProductSummary["LowestPrices"][0]["Points"]["PointsNumber"]
         except KeyError:
             return None
     
     @property
     def AmazonUsedOfferCount(self):
-        usedproductsummary = self.UsedProductSummary
-        if not usedproductsummary:
+        usedProductSummary = self.UsedProductsSummary
+        if not usedProductSummary:
             return None
         try:
-            return usedproductsummary["NumberOfOffers"][0]["OfferCount"] 
+            return usedProductSummary["NumberOfOffers"][0]["OfferCount"] 
         except KeyError:
             return None
 
     @property
     def MerchantUsedLowestLandPriceAmount(self):
-        usedproductsummary = self.UsedProductSummary
-        if not usedproductsummary:
+        usedProductSummary = self.UsedProductsSummary
+        if len(usedProductSummary["LowestPrices"]) < 2:
             return None
         try:
-            return usedproductsummary["LowestPrices"][1]["LandedPrice"]["Amount"]
+            return usedProductSummary["LowestPrices"][1]["LandedPrice"]["Amount"]
         except KeyError:
             return None
     
     @property
     def MerchantUsedLowestShippingAmount(self):
-        usedproductsummary = self.UsedProductSummary
-        if not usedproductsummary:
+        usedProductSummary = self.UsedProductsSummary
+        if len(usedProductSummary["LowestPrices"]) < 2:
             return None
         try:
-            return usedproductsummary["LowestPrices"][1]["Shipping"]["Amount"]
+            return usedProductSummary["LowestPrices"][1]["Shipping"]["Amount"]
         except KeyError:
             return None
     
     @property
     def MerchantUsedLowestPointsNumber(self):
-        usedproductsummary = self.UsedProductSummary
-        if not usedproductsummary:
+        usedProductSummary = self.UsedProductsSummary
+        if len(usedProductSummary["LowestPrices"]) < 2:
             return None
         try:
-            return usedproductsummary["LowestPrices"][1]["Points"]["PointsNumber"]
+            return usedProductSummary["LowestPrices"][1]["Points"]["PointsNumber"]
         except KeyError:
             return None
     
     @property
     def MerchantUsedOfferCount(self):
-        usedproductsummary = self.UsedProductSummary
-        if not usedproductsummary:
+        usedProductSummary = self.UsedProductsSummary
+        if len(usedProductSummary["NumberOfOffers"]) < 2:
             return None
         try:
-            return usedproductsummary["NumberOfOffers"][1]["OfferCount"] 
+            return usedProductSummary["NumberOfOffers"][1]["OfferCount"] 
         except KeyError:
             return None
 
@@ -704,7 +754,7 @@ class ScrapeRequestResult(models.Model):
                 ("ランキング名2", self.SalesRankingTwoId),
                 ("ランキング2", self.SalesRankingTwoRank),
                 ("カテゴリ", self.ProductGroup),
-                # ("ProductTypeName",	),
+                # # ("ProductTypeName",	),
                 ("定価", self.ListPriceAmount),
                 ("BuyBox価格", self.BuyBoxPriceLandAmount),
                 ("BuyBox送料", self.BuyBoxPriceShippingAmount),

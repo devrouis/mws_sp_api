@@ -1,3 +1,4 @@
+from gettext import Catalog
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from main.models import *
@@ -18,7 +19,7 @@ from main.sp_api import *
 from main.sp_api.sp_api_aws import *
 
 from sp_api.base import Marketplaces
-from sp_api.api import Orders
+from sp_api.api import CatalogItems, CatalogItemsVersion, Products
 # ------------------------------------------------
 
 def chunks(lst, n):
@@ -39,15 +40,15 @@ def save_to_db(req, operation_name, data, asin, jan):
     logger.info(f'{operation_name} saved')
   p.save()
 
-def parse_and_save_result(req, operation_name, result_dict, asin, jan, asin_list, jan_list):
-  # if req.id_type == ID_ASIN:
-    # asin = result_dict['asin']
-  # if 'Id' in result_dict: # for get_matching_product_for_id response
-  #   asin = result_dict['Id']['value']
-  # if 'ASIN' in result_dict:
-  #   asin = result_dict['Products']['Product']['ASIN']['value']
-  # asin_index = asin_list.index(asinValue)
-  save_to_db(req, operation_name, result_dict, asin, jan)
+# def parse_and_save_result(req, operation_name, result_dict, asin, jan, asin_list, jan_list):
+#   if req.id_type == ID_ASIN:
+#     asin = result_dict['asin']
+#   if 'Id' in result_dict: # for get_matching_product_for_id response
+#     asin = result_dict['Id']['value']
+#   if 'ASIN' in result_dict:
+#     asin = result_dict['Products']['Product']['ASIN']['value']
+#   asin_index = asin_list.index(asinValue)
+#   save_to_db(req, operation_name, result_dict, asin, jan)
 
 def merge_dict(d1, d2):
   dd = defaultdict(list)
@@ -60,185 +61,113 @@ def merge_dict(d1, d2):
               dd[key].append(value)
   return dict(dd)
 
+def product_params(list, marketplaceId, itemCondition_type):
+  data = []
+  for item in list:
+    uri = "/products/pricing/v0/items/{}/offers".format(item)
+    method = "GET"
+    MarketplaceId=marketplaceId
+    itemCondition = itemCondition_type
+    customerType = "Consumer"
+
+    item = {
+      "uri": uri,
+      "method": method,
+      "MarketplaceId": MarketplaceId,
+      "ItemCondition": itemCondition,
+      "CustomerType": customerType
+    }
+
+    data.append(item)
+  return data
+
 def process_request(req):
-  # credentials=dict(
-  #     refresh_token=req.user.sp_api_refresh_token,
-  #     lwa_app_id=appsettings.sp_api_client_id,
-  #     lwa_client_secret=appsettings.sp_api_client_secret,
-  #     aws_secret_key=appsettings.sp_IAM_user_secret_key,
-  #     aws_access_key=appsettings.sp_IAM_user_access_key,
-  #     # role_arn = 'arn:aws:iam::072834111115:role/ASIN_JAN_ROLE'
-  # )
-  # response = Orders(credentials=credentials).get_orders(CreatedAfter='TEST_CASE_200', MarketplaceIds=["ATVPDKIKX0DER"])
-  # print('***response start***')
-  # print(response)
-  # print('***response end***')
   req.status = REQUEST_STATUS_IN_PROGRESS
   req.save()
 
-
-
-  operations = [f.name.replace('do_', '') for f in User._meta.fields if 'do_' in f.name and getattr(req.user, f.name)]
+  credentials=dict(
+      refresh_token=req.user.sp_api_refresh_token,
+      lwa_app_id=appsettings.sp_api_client_id,
+      lwa_client_secret=appsettings.sp_api_client_secret,
+      aws_secret_key=appsettings.sp_IAM_user_secret_key,
+      aws_access_key=appsettings.sp_IAM_user_access_key,
+  )
   
-  api = get_api(req.user)
-  logger.info("now processing {}".format(req.id))
+  if len(req.id_list) > 0:
+    Keywords = ','.join(str(x) for x in req.id_list)
+  else:
+    print('There is no item list.')
 
-  # if query by jan
-  asin_jan_pairs = []
+  MarketplaceIds=req.user.market_place
+  IncludedData="attributes, dimensions, images, productTypes, salesRanks, summaries, relationships"
 
-  sp_get_token_param = {
-    "SPAPI_LWA_Client_ID" : appsettings.sp_api_client_id,
-    "SPAPI_LWA_Client_PW" : appsettings.sp_api_client_secret,
-    "SPAPI_REFRESH_TOKEN" : req.user.sp_api_refresh_token
-  }
-
-  asinItem = None
-  janItem = None
-  
+  # make body query in products pricing 
+  request_by_new = product_params(req.id_list, req.user.market_place, 'New')
+  request_by_used = product_params(req.id_list, req.user.market_place, 'Used')
+ 
   if req.id_type == ID_ASIN :
     if req.user.api_type == SP:
-      token=SPAPI_Get_Token(sp_get_token_param)
-      SPAPI_Access_Token=token[0] 
-      # CatalogItems = SPAPI_GetCatalogItems("", req.id_list, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token)
-      ProductsItemOffers = SPAPI_GetProductsItemOffers("", req.id_list, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token)
-      # for asin in req.id_list:
-      #   data = []
-      #   # sp_api_start()
-      #   token=SPAPI_Get_Token(sp_get_token_param)
-      #   SPAPI_Access_Token=token[0] 
-      #   CatalogItem = SPAPI_GetCatalogItemsForASIN(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token)
-      #   NewProductPrice = SPAPI_GetProductsPriceForAsin(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token, 'new')
-      #   UsedProductPrice = SPAPI_GetProductsPriceForAsin(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token, 'used')
-      #   combined_dct1 = merge_dict(CatalogItem, NewProductPrice)
-      #   combined_dct2 = merge_dict(combined_dct1, UsedProductPrice)
-        
-      #   data =  json.dumps(combined_dct2)
-      #   combined_json = SP_API_NEW_FORMATTING(json.loads(data))
-
-      #   asinItem = asin
-
-      #   parse_and_save_result(req, 'operation_name', json.dumps(combined_json), asinItem, janItem, 'asin_list', 'jan_list')
-
-        # if type(data) in [dict, ObjectDict]: # if single product
-        #   parse_and_save_result(req, 'operation_name', res, asinItem, janItem, 'asin_list', 'jan_list')
-        # elif type(data) == list: # if multiple products
-        #   for item in data:
-        #     parse_and_save_result(req, 'operation_name', item, asinItem, janItem, 'asin_list', 'jan_list')
-        # products = res['Products']['Product']
-
-        # if type(products) == list:
-        #   if req.user.asin_jan_one_to_one:
-        #     print('one to one')
-        #     no_set = [p for p in products if 'Binding' in p['AttributeSets']['ItemAttributes'] and p['AttributeSets']['ItemAttributes']['Binding']['value'] != 'セット買い']
-        #     if len(no_set) > 0:
-        #       asin_jan_pairs.append((asin, None))
-        #     else:
-        #       ranked = [p for p in products if 'SalesRankings' in p and 'SalesRank' in p['SalesRankings']]
-        #       s = sorted(ranked, key=lambda p: p['SalesRankings']['SalesRank'][0]['Rank']['value'] if type(p['SalesRankings']['SalesRank']) == list else p['SalesRankings']['SalesRank']['Rank']['value'])
-        #       if len(s) > 0:
-        #         asin_jan_pairs.append((s[0]['Identifiers']['MarketplaceASIN']['ASIN']['value'], None))
-        #   else:
-        #     asin_jan_pairs.extend([(p['Identifiers']['MarketplaceASIN']['ASIN']['value'], None) for p in products])
-        # elif type(products) in [dict, ObjectDict]:
-        #   asin_jan_pairs.extend([(products['Identifiers']['MarketplaceASIN']['ASIN']['value'], None)])
-        # else:
-        #   logger.error(f'unexpected type {type(products)}')
-        #   return
-  #------ get sp-api catalogItems for ASIN end-------
-
-    # else:
-    #   asin_jan_pairs = [(asin, None) for asin in req.id_list]
-
-  elif req.id_type == ID_JAN:
-    for jan in req.id_list:
+      CatalogData = []
+      NewProductsData = []
+      UsedProductsData = []
+      sleep(2)
       try:
-  #------ get sp-api catalogItems for JAN start-------        
-        if req.user.api_type == SP:
-          token=SPAPI_Get_Token(sp_get_token_param)
-          SPAPI_Access_Token=token[0]
-          CatalogItem = SPAPI_GetCatalogItemsForJAN(jan, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token)
-          asin = CatalogItem['payload']['Items'][0]['Identifiers']['MarketplaceASIN']['ASIN']
-          CatalogItem['payload'] = CatalogItem['payload']['Items'][0]
-          NewProductPrice = SPAPI_GetProductsPriceForAsin(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token, 'new')
-          UsedProductPrice = SPAPI_GetProductsPriceForAsin(asin, appsettings.sp_IAM_user_access_key, appsettings.sp_IAM_user_secret_key, req.user.market_place, SPAPI_Access_Token, 'used')
-          combined_dct1 = merge_dict(CatalogItem, NewProductPrice)
-          combined_dct2 = merge_dict(combined_dct1, UsedProductPrice)
-        
-          data =  json.dumps(combined_dct2)
-          combined_json = SP_API_NEW_FORMATTING(json.loads(data))
-          
-          print('**** NewProductPrice ****')
-          print(NewProductPrice)
-          print('**** UsedProductPrice ****')
-          print(UsedProductPrice)
-          print('**** Combined Json ****')
-          print(combined_json)
-
-
-          asinItem = asin
-          janItem = jan
-          
-
-
-          parse_and_save_result(req, 'operation_name', json.dumps(combined_json), asinItem, janItem, 'asin_list', 'jan_list')
-        # else:
-        #   res = get_matching_product_for_id(api, req.user.market_place, [jan], id_type = 'JAN')        
-  #------ get sp-api catalogItems for JAN start------- 
-          
-        # if 'Error' in res:
-        #   raise Exception(res["Error"]["Message"]["value"])
+        CatalogResponse = CatalogItems(credentials=credentials, marketplace=Marketplaces.JP, version=CatalogItemsVersion.V_2022_04_01).search_catalog_items(keywords=Keywords, marketplaceIds=MarketplaceIds, includedData=IncludedData)
       except Exception as e:
-        logger.error(e, stack_info=True)
-        save_to_db(req, None, { 'Error': str(e) }, None, jan = jan)
-        continue        
-  
-      # products = res['Products']['Product']
+        print('--------catalog err:', e)
+      finally:
+        if CatalogResponse.errors is None:
+          CatalogData = CatalogResponse.payload['items']
 
-      # if type(products) == list:
-      #   if req.user.asin_jan_one_to_one:
-      #     print('one to one')
-      #     no_set = [p for p in products if 'Binding' in p['AttributeSets']['ItemAttributes'] and p['AttributeSets']['ItemAttributes']['Binding']['value'] != 'セット買い']
-      #     if len(no_set) > 0:
-      #       asin_jan_pairs.append((no_set[0]['Identifiers']['MarketplaceASIN']['ASIN']['value'], jan))
-      #     else:
-      #       ranked = [p for p in products if 'SalesRankings' in p and 'SalesRank' in p['SalesRankings']]
-      #       s = sorted(ranked, key=lambda p: p['SalesRankings']['SalesRank'][0]['Rank']['value'] if type(p['SalesRankings']['SalesRank']) == list else p['SalesRankings']['SalesRank']['Rank']['value'])
-      #       if len(s) > 0:
-      #         asin_jan_pairs.append((s[0]['Identifiers']['MarketplaceASIN']['ASIN']['value'], jan))
-      #   else:
-      #     asin_jan_pairs.extend([(p['Identifiers']['MarketplaceASIN']['ASIN']['value'], jan) for p in products])
-      # elif type(products) in [dict, ObjectDict]:
-      #   asin_jan_pairs.extend([(products['Identifiers']['MarketplaceASIN']['ASIN']['value'], jan)])
-      # else:
-      #   logger.error(f'unexpected type {type(products)}')
-      #   return
-    
-  # for id_chunk in chunks(asin_jan_pairs, appsettings.request_batch_size):
-  #   asin_list = [e[0] for e in id_chunk]
-  #   jan_list = [e[1] for e in id_chunk]
+      sleep(2)
+      try:
+        NewProductsResponse = Products(marketplace=Marketplaces.JP, credentials=credentials).get_item_offers_batch(request_by_new)
+      except Exception as e:
+        print('--------new products err:', e)
+      finally:
+        if NewProductsResponse.errors is None:
+          NewProductsData = NewProductsResponse.payload['responses']
 
-  #   for operation_name in operations:
-  #     logger.info(f'{operation_name}...')
-  #     sleep(appsettings.default_wait_sec)
-  #     operation = globals()[operation_name]
-  #     try:
-  #       result = operation(api, req.user.market_place, asin_list)
-  #       if 'Error' in result:
-  #         raise Exception(result['Error'])
-  #     except Exception as e:
-  #       sleep(appsettings.quota_wait_sec)
-  #       # retry 
-  #       try:
-  #         result = operation(api, req.user.market_place, asin_list)
-  #       except Exception as e:
-  #         logger.error(str(e), stack_info=True)
-  #         break
-  # if type(data) in [dict, ObjectDict]: # if single product
-  #   parse_and_save_result(req, 'operation_name', data, asinItem, jan, 'asin_list', 'jan_list')
-  # elif type(data) == list: # if multiple products
-  #   for item in data:
-  #     parse_and_save_result(req, 'operation_name', item, asinItem, jan, 'asin_list', 'jan_list')
-        
+      sleep(2)
+      try:
+        UsedProductsResponse = Products(marketplace=Marketplaces.JP, credentials=credentials).get_item_offers_batch(request_by_used)
+      except Exception as e:
+        print('--------used products err:', e)
+      finally:
+        if UsedProductsResponse.errors is None:
+          UsedProductsData = UsedProductsResponse.payload['responses']
+
+      allData = list(zip(CatalogData, NewProductsData, UsedProductsData))
+      
+      for item in allData:
+        save_to_db(req, 'operation_name', item, 'asin', 'jan')
+
+  elif req.id_type == ID_JAN:      
+    if req.user.api_type == SP:
+      print('***jan***')
+      try:
+        CatalogResponse = CatalogItems(credentials=credentials, marketplace=Marketplaces.JP, version=CatalogItemsVersion.V_2022_04_01).search_catalog_items(keywords=Keywords, marketplaceIds=MarketplaceIds, includedData=IncludedData)
+      except Exception as e:
+        print('--------catalog err:', e)
+
+      try:
+        NewProductsResponse = Products(marketplace=Marketplaces.JP, credentials=credentials).get_item_offers_batch(request_by_new)
+      except Exception as e:
+        print('--------products err:', e)
+      
+      try:
+        UsedProductsResponse = Products(marketplace=Marketplaces.JP, credentials=credentials).get_item_offers_batch(request_by_used)
+      except Exception as e:
+        print('--------used products err:', e)
+
+      print('***Jan Catalog Response Start***')
+      print(CatalogResponse)
+      print('***Jan New Product Response Start***')
+      print(NewProductsResponse)
+      print('***Jan Used Product Response Start***')
+      print(UsedProductsResponse)
+      print('***Jan Response End***')
+
 class Command(BaseCommand):
   def add_arguments(self, parser):
     parser.add_argument('-i', '--id', dest='id', type=int)
@@ -268,4 +197,3 @@ class Command(BaseCommand):
     logger.info('Completed.')
 
      # ------------------------------------------------
-

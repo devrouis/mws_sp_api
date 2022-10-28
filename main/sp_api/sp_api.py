@@ -264,7 +264,7 @@ def SPAPI_GetProductsItemOffers(IdentifiersType, Identifiers, SPAPI_IAM_User_Acc
     headerAndUrl = SPAPI_POST_Get_Header_And_RequestUrl(SPAPI_Access_Token, SPAPI_IAM_User_Access_Key, SPAPI_IAM_User_Secret_Key, 'POST', SPAPI_Service, SPAPI_Domain, SPAPI_Region, SPAPI_Endpoint, SPAPI_SignatureMethod, SPAPI_UserAgent, request_parameters_unencode, SPAPI_API_Path, params)
     request_url = headerAndUrl[1]
     headers = headerAndUrl[0]
-    api_response = requests.post(request_url, headers=headers, data=params)
+    api_response = requests.post(request_url, data=params, headers=headers)
     print('*** api response start ***')
     print(api_response.text)
     print('*** api response end ***')
@@ -301,7 +301,7 @@ def SPAPI_POST_Get_Header_And_RequestUrl(SPAPI_Access_Token, SPAPI_IAM_User_Acce
     canonical_headers = 'host:' + SPAPI_Domain + '\n' + 'user-agent:' + SPAPI_UserAgent + '\n' + 'x-amz-access-token:' + SPAPI_Access_Token + '\n' + 'x-amz-date:' + amzdate + '\n'
 
     ## 正規リクエストヘッダリストの項目情報の作成(hostとx-amz-dateも入れてる)
-    signed_headers = 'host;user-agent;x-amz-access-token;x-amz-date'
+    signed_headers = 'host;user-agent;x-amz-access-token;x-amz-content-sha256;x-amz-date'
 
     ## ペイロードハッシュ（リクエスト本文コンテンツのハッシュ）の作成
     ## ※GETリクエストの場合、ペイロードは空の文字列（""）になる。

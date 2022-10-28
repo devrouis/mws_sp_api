@@ -22,3 +22,4 @@ djangorestframework
 paypal-checkout-serversdk
 django-environ==0.4.5
 python-amazon-sp-api
+livereload
