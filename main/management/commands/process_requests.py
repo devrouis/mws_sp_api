@@ -1,3 +1,4 @@
+from ast import keyword
 from gettext import Catalog
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
@@ -92,7 +93,6 @@ def process_request(req):
       aws_secret_key=appsettings.sp_IAM_user_secret_key,
       aws_access_key=appsettings.sp_IAM_user_access_key,
   )
-  
 
   MarketplaceIds=req.user.market_place
   IncludedData="attributes, dimensions, images, productTypes, salesRanks, summaries, relationships"
@@ -103,25 +103,31 @@ def process_request(req):
   else:
     print('There is no item list.')
   
+  print(Keywords)
   if req.id_type == ID_ASIN :
     if req.user.api_type == SP:
-      
-      
-      # make body query in products pricing 
-      request_by_new = product_params(req.id_list, req.user.market_place, 'New')
-      request_by_used = product_params(req.id_list, req.user.market_place, 'Used')
-
       CatalogData = []
       NewProductsData = []
       UsedProductsData = []
+      print('***')
       sleep(2)
       try:
         CatalogResponse = CatalogItems(credentials=credentials, marketplace=Marketplaces.JP, version=CatalogItemsVersion.V_2022_04_01).search_catalog_items(keywords=Keywords, marketplaceIds=MarketplaceIds, includedData=IncludedData)
       except Exception as e:
         print('--------catalog err:', e)
       finally:
+        print('---CatalogResponse---')
+        print(CatalogResponse)
         if CatalogResponse.errors is None:
           CatalogData = CatalogResponse.payload['items']
+      
+      asin_list = []
+      for item in CatalogData:
+        asin_list.append(item["asin"])
+
+      # make body query in products pricing 
+      request_by_new = product_params(asin_list, req.user.market_place, 'New')
+      request_by_used = product_params(asin_list, req.user.market_place, 'Used')
 
       sleep(2)
       try:
@@ -129,6 +135,8 @@ def process_request(req):
       except Exception as e:
         print('--------new products err:', e)
       finally:
+        print('---NewProductsResponse---')
+        print(NewProductsResponse)
         if NewProductsResponse.errors is None:
           NewProductsData = NewProductsResponse.payload['responses']
 
@@ -142,22 +150,25 @@ def process_request(req):
           UsedProductsData = UsedProductsResponse.payload['responses']
 
       allData = list(zip(CatalogData, NewProductsData, UsedProductsData))
-      
+      print('***allData***')
+      print(allData)
       for item in allData:
         save_to_db(req, 'operation_name', item, 'asin', 'jan')
 
   elif req.id_type == ID_JAN:      
     if req.user.api_type == SP:
-      print('***jan***')
       CatalogData = []
       NewProductsData = []
       UsedProductsData = []
       sleep(2)
+      print('JAN')
       try:
         CatalogResponse = CatalogItems(credentials=credentials, marketplace=Marketplaces.JP, version=CatalogItemsVersion.V_2022_04_01).search_catalog_items(keywords=Keywords, marketplaceIds=MarketplaceIds, includedData=IncludedData)
       except Exception as e:
         print('--------catalog err:', e)
       finally:
+        print('CatalogResponse')
+        print(CatalogResponse)
         if CatalogResponse.errors is None:
           CatalogData = CatalogResponse.payload['items']
       

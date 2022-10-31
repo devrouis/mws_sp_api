@@ -29,10 +29,10 @@ class RequestTextForm(forms.ModelForm):
     data= super().clean()
     id_type = data['id_type']
     id_text = data['id_text']
-    pattern = r'^[A-Z0-9]{10}$' if id_type == 'asin' else r'^[0-9]{13}$' 
-    for index, id in enumerate(id_text.split('\r\n')):
-      if not re.fullmatch(pattern, id):
-        raise forms.ValidationError(f'{index + 1}個目のIDが不正です。...')
+    # pattern = r'^[A-Z0-9]{10}$' if id_type == 'asin' else r'^[0-9]{13}$' 
+    # for index, id in enumerate(id_text.split('\r\n')):
+    #   if not re.fullmatch(pattern, id):
+    #     raise forms.ValidationError(f'{index + 1}個目のIDが不正です。...')
     return data
 class RequestCsvForm(forms.ModelForm):
   class Meta:
