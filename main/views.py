@@ -301,9 +301,9 @@ def download(request):
     writer.writerow(headers)
     for r in results:
         elems = r.csv_column_values
-        if obj.id_type == 'asin':
-            elems[1] = ''
-        elif obj.id_type == 'jan':
+        # if obj.id_type == 'asin':
+        #     elems[1] = ''
+        if obj.id_type == 'jan':
             temp = elems[0]
             elems[0] = elems[1]
             elems[1] = temp

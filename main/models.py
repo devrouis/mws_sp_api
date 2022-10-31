@@ -322,6 +322,24 @@ class ScrapeRequestResult(models.Model):
         return data["body"]["payload"]["Summary"]
 
     @property
+    def dbasin(self):
+        if not self.get_matching_product_for_id_raw or self.get_matching_product_for_id_raw == '':
+            return None
+
+        data = ast.literal_eval(self.get_matching_product_for_id_raw)[0]
+        return data["asin"]
+
+    @property
+    def dbjan(self):
+        attributesets = self.AttributeSets
+        try:
+            if not attributesets:
+                return None
+            return attributesets["externally_assigned_product_identifier"][0]["value"]
+        except KeyError:
+            return None
+
+    @property
     def Title(self):
         attributesets = self.AttributeSets
         if not attributesets:
@@ -754,8 +772,8 @@ class ScrapeRequestResult(models.Model):
     @property
     def csv_columns(self):
         return [
-                ("JAN", self.asin),
-                ("ASIN", self.jan),
+                ("ASIN", self.dbasin),
+                ("JAN", self.dbjan ),
                 ("タイトル", self.Title),
                 ("出版社・メーカー", self.Publisher),
                 ("型番", self.PartNumber),

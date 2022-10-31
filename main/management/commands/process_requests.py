@@ -102,6 +102,10 @@ def process_request(req):
     Keywords = ','.join(str(x) for x in req.id_list)
   else:
     print('There is no item list.')
+
+  # make body query in products pricing 
+  request_by_new = product_params(req.id_list, req.user.market_place, 'New')
+  request_by_used = product_params(req.id_list, req.user.market_place, 'Used')
   
   print(Keywords)
   if req.id_type == ID_ASIN :
@@ -112,7 +116,7 @@ def process_request(req):
       print('***')
       sleep(2)
       try:
-        CatalogResponse = CatalogItems(credentials=credentials, marketplace=Marketplaces.JP, version=CatalogItemsVersion.V_2022_04_01).search_catalog_items(keywords=Keywords, marketplaceIds=MarketplaceIds, includedData=IncludedData)
+        CatalogResponse = CatalogItems(credentials=credentials, marketplace=Marketplaces.JP, version=CatalogItemsVersion.V_2022_04_01).search_catalog_items(identifiersType="Asin", marketplaceIds=MarketplaceIds, includedData=IncludedData, identifiers=Keywords)
       except Exception as e:
         print('--------catalog err:', e)
       finally:
@@ -121,13 +125,16 @@ def process_request(req):
         if CatalogResponse.errors is None:
           CatalogData = CatalogResponse.payload['items']
       
-      asin_list = []
-      for item in CatalogData:
-        asin_list.append(item["asin"])
+      # asin_list = []
+      # for item in CatalogData:
+      #   asin_list.append(item["asin"])
 
-      # make body query in products pricing 
-      request_by_new = product_params(asin_list, req.user.market_place, 'New')
-      request_by_used = product_params(asin_list, req.user.market_place, 'Used')
+      # print('asin_list')
+      # print(asin_list)
+      # # make body query in products pricing 
+      # request_by_new = product_params(asin_list, req.user.market_place, 'New')
+      # request_by_used = product_params(asin_list, req.user.market_place, 'Used')
+
 
       sleep(2)
       try:
@@ -136,7 +143,6 @@ def process_request(req):
         print('--------new products err:', e)
       finally:
         print('---NewProductsResponse---')
-        print(NewProductsResponse)
         if NewProductsResponse.errors is None:
           NewProductsData = NewProductsResponse.payload['responses']
 
@@ -150,8 +156,7 @@ def process_request(req):
           UsedProductsData = UsedProductsResponse.payload['responses']
 
       allData = list(zip(CatalogData, NewProductsData, UsedProductsData))
-      print('***allData***')
-      print(allData)
+
       for item in allData:
         save_to_db(req, 'operation_name', item, 'asin', 'jan')
 
@@ -163,21 +168,16 @@ def process_request(req):
       sleep(2)
       print('JAN')
       try:
-        CatalogResponse = CatalogItems(credentials=credentials, marketplace=Marketplaces.JP, version=CatalogItemsVersion.V_2022_04_01).search_catalog_items(keywords=Keywords, marketplaceIds=MarketplaceIds, includedData=IncludedData)
+        CatalogResponse = CatalogItems(credentials=credentials, marketplace=Marketplaces.JP, version=CatalogItemsVersion.V_2022_04_01).search_catalog_items(identifiersType="Jan", identifiers=Keywords, marketplaceIds=MarketplaceIds, includedData=IncludedData)
       except Exception as e:
         print('--------catalog err:', e)
       finally:
-        print('CatalogResponse')
-        print(CatalogResponse)
         if CatalogResponse.errors is None:
           CatalogData = CatalogResponse.payload['items']
       
       asin_list = []
       for item in CatalogData:
         asin_list.append(item["asin"])
-
-      print('asin_list')
-      print(asin_list)
 
       if len(asin_list) > 0:
         Keywords = ','.join(str(x) for x in req.id_list)
