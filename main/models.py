@@ -181,7 +181,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             return None
         return s[0]
 
-# @background(schedule=5)
+@background(schedule=5)
 def async_process_request(request_id):
     call_command('process_requests', id=request_id)
 
